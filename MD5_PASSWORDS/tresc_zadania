@@ -1,0 +1,65 @@
+Zadanie
+(15 punktów) Zadaniem będzie napisanie programu wielowątkowego do łamania haseł metodą słownikową.
+
+Zakładamy, że hasła są generowane metodą skrótów kryptograficznych MD5. Zbiory przykładowych haseł do łamania można znaleźć na stronie: https://twitter.com/PastebinLeaks
+
+Wersję źródłową algorytmu do obliczania skrótów MD5 można znaleźć na stronie Wikipedii:
+
+http://en.wikipedia.org/wiki/MD5#Simple_implementation
+
+Implementacja obliczania skrótów MD5 znajduje się również w bibliotece OpenSSL, która jest najprawdopodobniej zainstalowana na każdym komputerze Unix/Linux. Przykładowy program obliczający skóty kryptograficzne różnymi algorytmami można znaleźć na stronie:
+
+https://www.openssl.org/docs/crypto/EVP_DigestInit.html
+
+Organizacja programu
+Program łamania haseł powinien być zorganizowany trochę podobnie do analizowanego wcześniej programu producentów i konsumentów. Zadaniem wątku głównego jest wczytanie do pamięci globalnej programu podanej przez użytkownika listy zaszyfrowanych haseł do łamania, oraz podanego (lub domyślnego) słownika. Jedno i drugie jest listą słów, przy czym słownik może zawierać nawet bardzo dużą liczbę słów różnej długości, i powinien być załadowany do pamięci dynamicznej zaalokowanej funkcją malloc o dokładnie określonym rozmiarze. Natomiast lista haseł jest typowo mniejsza (można przyjąć maksymalnie 1000 haseł) i będą one miały stałą długość 32 znaków, zatem może dla nich być użyta tablica statycznie alokowana.
+
+Następnie wątek główny powinien uruchomić zdefiniowany zestaw wątków „producentów”. Zadaniem każdego z producentów jest próba złamania wszystkich haseł określoną metodą. Każdy z producentów będzie implementował inną metodę budowy haseł, w celu zrównoleglenia procesu ich łamania. Każdy producent będzie po kolei budował próbne hasła swoją metodą, następnie obliczał 32-znakowy skrót kryptograficzny MD5 każdego hasła, i porównywał ten skrót z całą listą zaszyfrowanych haseł. Jeśli któreś zaszyfrowane hasło zgodzi się z obliczonym skrótem, to znacza, że znalezione zostało hasło źródłowe. To hasło należy przesłać do wątku konsumenta, który zarejestruje złamane hasło i oznaczy odpowiednie hasło zaszyfrowane w tablicy globalnej, aby nie było już ono dalej porównywane.
+
+Ogólnie będą dwie grupy producentów: producenci haseł jednowyrazowych, i producenci haseł dwuwyrazowych.
+
+Producenci 0, 1, i 2
+Producenci 0, 1, i 2 są producentami haseł jednowyrazowych i ich implementacja jest obowiązkowa dla każdego. Będą oni sprawdzali najpierw hasła składające się z wszystkich kolejnych wyrazów słownika, a następnie z tych samych wyrazów z dodatkiem liczby, na początku i na końcu słowa. Najpierw należy sprawdzić wszystkie kombinacje słów z wszystkimi liczbami jednocyfrowymi, potem wszystkimi dwucyfrowymi, a następnie kolejno coraz dłuższymi.
+
+W ten sposób producenci 0, 1 i 2 nigdy nie skończą swojej pracy, ponieważ takich kombinacji jest nieskończenie wiele.
+
+Producent 0 próbuje wszystkich słów zapisanych wszystkimi małymi literami.
+
+Producent 1 próbuje wszystkich słów zapisanych pierwszą wielką literą i pozostałymi małymi.
+
+Producent 2 próbuje wszystkich słów zapisanych wszystkimi wielkimi literami.
+
+Inni producenci jednowyrazowi
+Można implementować innych producentów jednowyrazowych, którzy będą budowali hasła z innych kombinacji małych i wielkich liter, i/lub będą budowali hasła z kombinacji pojedynczych wyrazów, cyfr, i znaków interpunkcji.
+
+Prowadzący może zadać dodatkowe wymagania zaimplementowania konkretnych producentów z tej grupy.
+
+Producenci dwuwyrazowi
+Chcemy w programie próbować również haseł dwuwyrazowych biorąc po kolei wszystkie kombinacje dwóch wyrazów ze słownika. Takich kombinacji jest bardzo dużo, a jeśli dodatkowo uwzględni się warianty z dodatkiem cyfr i znaków interpunkcji - przed wyrazami, za wyrazami, lub pomiędzy wyrazami - to jest ich bardzo wiele. Dobrą metodą ich próbowania jest podzielenie różnych schematów budowy haseł dwuwyrazowych na różnych producentów, w celu zrównoleglenia działania programu.
+
+Obowiązkowo należy zaimplementować co najmniej trzech producentów z tej grupy. Mogą oni mieć bardzo podobny schemat działania i prawie identyczny kod, właśnie w celu sprawdzania podobnych (ale różnych) haseł w równolegle działających wątkach.
+
+Prowadzący zajęcia może sformułować szczegółowe wymagania dotyczące implementacji producentów z tej grupy.
+
+Wątek konsumenta
+Wątek konsumenta powinien wyświetlać na ekranie każde kolejno znalezione złamane hasło w miarę otrzymywania ich od producentów. Dodatkowo, konsument powinien obsługiwać „przerwanie” od użytkownika. Po otrzymaniu sygnału SIGHUP przez program, wątek konsumenta powinien wyświetlić jednolinijkowe podsumowanie osiągniętych wyników dla bieżącego pliku haseł.
+
+Dodatkowe wymagania
+Przez cały czas pracy program główny powinien czytać stdin gdzie użytkownik może w dowolnym momencie wpisać nazwę nowego pliku haseł do łamania. Gdy to się zdarzy, program główny powinien wykonać „reset”, tzn. spowodować żeby zarówno producenci jak i konsument zarzucili pracę nad poprzednimi hasłami i zaczęli pobierać i łamać nowe.
+
+Materiały źródłowe
+Źródła słowników:
+
+http://www.insidepro.com/dictionaries.php
+http://linux.maruhn.com/sec/cracklib-dicts.html
+Zbiory zahaszowanych haseł z PastebinLeaks:
+
+http://pastebin.com/L6YbD136
+http://pastebin.com/YUjExprE
+http://pastebin.com/NVps3sB1
+http://pastebin.com/3zkPN20y
+http://pastebin.com/grzwR79w
+http://pastebin.com/JhN64Qkc
+http://pastebin.com/Ef5gXBrU
+http://pastebin.com/bwT3T0M7
+http://pastebin.com/GuRjzY3Z
